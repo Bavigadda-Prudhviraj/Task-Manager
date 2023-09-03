@@ -2,11 +2,14 @@ package com.prudhvi.taskmanager.controller;
 
 import com.prudhvi.taskmanager.dto.CreateTaskDTO;
 import com.prudhvi.taskmanager.dto.ErrorResponseDTO;
+import com.prudhvi.taskmanager.dto.TaskResponseDTO;
 import com.prudhvi.taskmanager.dto.UpdateTaskDTO;
 import com.prudhvi.taskmanager.entity.TaskEntity;
+import com.prudhvi.taskmanager.service.NotesService;
 import com.prudhvi.taskmanager.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.modelmapper.ModelMapper;
 
 import java.text.ParseException;
 import java.util.List;
@@ -16,8 +19,11 @@ import java.util.List;
 public class TaskController {
 
     private  final TaskService taskService;
+    private  final NotesService notesService;
+    private ModelMapper modelMapper = new ModelMapper();
 
-    public TaskController(TaskService taskService) {
+    public TaskController(TaskService taskService,NotesService notesService) {
+        this.notesService=notesService;
         this.taskService = taskService;
     }
 
@@ -27,12 +33,15 @@ public class TaskController {
         return  ResponseEntity.ok(tasks);
     }
     @GetMapping("/{id}")
-    public ResponseEntity<TaskEntity> getTaskById(@PathVariable("id") int id){
+    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable("id") int id){
         var task=taskService.getTaskById(id);
+        var notes=notesService.getNotesForTask(id);
         if(task==null){
             return   ResponseEntity.notFound().build();
         }
-        return  ResponseEntity.ok(task);
+        var taskresponse=modelMapper.map(task, TaskResponseDTO.class);
+        taskresponse.setNotes(notes);
+        return  ResponseEntity.ok(taskresponse);
     }
     @PostMapping("")
     public ResponseEntity<TaskEntity> addTask(@RequestBody CreateTaskDTO body) throws ParseException {
